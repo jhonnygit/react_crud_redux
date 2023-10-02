@@ -1,12 +1,9 @@
-import { formToJSON } from "axios";
 import React,{useState,useEffect} from "react";
-import {useParams,useNavigate} from 'react-router-dom';
+import {useDispatch} from 'react-redux';
+import { updateTutorial,deleteTutorial } from "../actions/tutorials";
 import TutorialDataService from "../services/TutorialService";
 
 const Tutorial=props=>{
-    const {id}=useParams();
-    let navigate=useNavigate();
-
     const initialTutorialState={
         id:null,
         title:"",
@@ -16,6 +13,8 @@ const Tutorial=props=>{
 
     const [currentTutorial,setCurrentTutorial]=useState(initialTutorialState);
     const [message,setMessage]=useState("");
+
+    const dispatch=useDispatch();
 
     const getTutorial=id=>{
         TutorialDataService.get(id)
@@ -29,16 +28,15 @@ const Tutorial=props=>{
     };
 
     useEffect(()=>{
-        if(id)
-            getTutorial(id);
-    },[id]);
+        getTutorial(props.match.params.id);
+    },[props.match.params.id]);
 
     const handleInputChange=event=>{
         const {name,value}=event.target;
         setCurrentTutorial({...currentTutorial,[name]:value});
     };
 
-    const updatePublished=status=>{
+    const updateStatus=status=>{
         var data={
             id:currentTutorial.id,
             title: currentTutorial.title,
@@ -46,20 +44,21 @@ const Tutorial=props=>{
             published: status
         };
 
-        TutorialDataService.update(currentTutorial.id,data)
+        dispatch(updateTutorial(currentTutorial.id,data))
         .then(response=>{
+            console.log(response)
             setCurrentTutorial({...currentTutorial,published:status});
-            console.log(response.data)
+            setMessage("The status was updated successfully!");
         })
         .catch(e=>{
             console.log(e);
         });
     }
 
-    const updateTutorial=()=>{
-       TutorialDataService.update(currentTutorial.id,currentTutorial)
+    const updateContent=()=>{
+       dispatch(updateTutorial(currentTutorial.id,currentTutorial))
        .then(response => {
-            console.log(response.data);
+            console.log(response);
             setMessage("the tutorial was updated successfully!");
        })
        .catch(e=>{
@@ -67,11 +66,10 @@ const Tutorial=props=>{
        })
     };
 
-    const deleteTutorial=()=>{
-        TutorialDataService.remove(currentTutorial.id)
-        .then(response=>{
-            console.log(response.data);
-            navigate("/tutorials");
+    const removeTutorial=()=>{
+        dispatch(deleteTutorial(currentTutorial.id))
+        .then(()=>{
+            props.history.push("/tutorials");           
         })
         .catch(e=>{
             console.log(e);
@@ -118,27 +116,27 @@ const Tutorial=props=>{
           {currentTutorial.published ? (
             <button
               className="btn btn-primary mr-2"
-              onClick={() => updatePublished(false)}
+              onClick={() => updateStatus(false)}
             >
               UnPublish
             </button>
           ) : (
             <button
               className="btn btn-primary mr-2"
-              onClick={() => updatePublished(true)}
+              onClick={() => updateStatus(true)}
             >
               Publish
             </button>
           )}
 
-          <button className="btn btn-danger mr-2" onClick={deleteTutorial}>
+          <button className="btn btn-danger mr-2" onClick={removeTutorial}>
             Delete
           </button>
 
           <button
             type="submit"
             className="btn btn-success"
-            onClick={updateTutorial}
+            onClick={updateContent}
           >
             Update
           </button>
